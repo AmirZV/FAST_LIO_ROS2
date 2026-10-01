@@ -1,0 +1,49 @@
+/**:
+    ros__parameters:
+        feature_extract_enable: false
+        point_filter_num: 4
+        max_iteration: 3
+        filter_size_surf: 0.5
+        filter_size_map: 0.5
+        cube_side_length: 1000.0
+        runtime_pos_log_enable: false
+        map_file_path: "map.pcd"
+
+        common:
+            lid_topic:  "/lidar_points"
+            imu_topic:  "/fixposition/imu"
+            lid_reliable_qos: true      # receive every scan; best effort drops large clouds when the system is busy
+            time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
+            time_offset_lidar_to_imu: 0.0
+
+        preprocess:
+            lidar_type: 5                # 1 Livox, 2 Velodyne, 3 Ouster, 4 MID360, 5 Hesai
+            scan_line: 40                # Pandar40P
+            scan_rate: 10
+            timestamp_unit: 2            # unused for Hesai (per-point timestamps are absolute seconds)
+            blind: 2.0
+
+        mapping:
+            acc_cov: 0.1
+            gyr_cov: 0.1
+            b_acc_cov: 0.0001
+            b_gyr_cov: 0.0001
+            fov_degree:    360.0
+            det_range:     150.0
+            extrinsic_est_en:  false
+            # LiDAR pose in the IMU frame (Fixposition Vision-RTK 2), from LiDAR_IMU_Init, 2026-09-30.
+            extrinsic_T: [ -0.145974, 0.039697, 0.135394 ]
+            extrinsic_R: [ -0.006882, -0.999963,  0.005116,
+                            0.999939, -0.006926, -0.008568,
+                            0.008603,  0.005056,  0.999950 ]
+
+        publish:
+            path_en:  true
+            scan_publish_en:  true
+            dense_publish_en: true
+            scan_bodyframe_pub_en: true
+            map_en: false
+
+        pcd_save:
+            pcd_save_en: true    # writes PCD/scans_N.pcd every `interval` frames
+            interval: 600        # 1 minute at 10 Hz

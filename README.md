@@ -157,6 +157,20 @@ Edit ``` config/avia.yaml ``` to set the below parameters:
     5 is intensity
 ```
 
+### 3.5 Hesai Pandar with an external IMU
+
+Set `preprocess.lidar_type: 5`. The handler reads the `ring` (uint16) and `timestamp` (double, absolute seconds) fields that the Hesai ROS 2 driver publishes per point.
+
+`config/hesai_c3.yaml` is a working example for a Pandar40P with a Fixposition Vision-RTK 2 IMU:
+
+```bash
+ros2 launch fast_lio mapping.launch.py config_file:=hesai_c3.yaml
+```
+
+- `imu_topic` must carry `sensor_msgs/msg/Imu`, and the IMU and LiDAR stamps must come from the same clock.
+- `common.lid_reliable_qos: true` subscribes to the point cloud with reliable QoS. With the default best-effort QoS, large clouds can be dropped silently when the system is busy, for example on bag replay.
+- With `pcd_save.pcd_save_en: true`, the map is written to `PCD/scans_N.pcd` every `pcd_save.interval` frames, and the rest on shutdown.
+
 ## 4. Rosbag Example
 ### 4.1 Livox Avia Rosbag
 <div align="left">
