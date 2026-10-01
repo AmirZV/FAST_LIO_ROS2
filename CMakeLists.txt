@@ -59,7 +59,6 @@ find_package(std_srvs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(livox_ros_driver2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(dependencies
@@ -73,8 +72,17 @@ set(dependencies
   visualization_msgs
   pcl_ros
   pcl_conversions
-  livox_ros_driver2
 )
+
+# Optional: Livox CustomMsg input (lidar_type 1)
+find_package(livox_ros_driver2 QUIET)
+if(livox_ros_driver2_FOUND)
+  list(APPEND dependencies livox_ros_driver2)
+  add_compile_definitions(USE_LIVOX)
+  message(STATUS "livox_ros_driver2 found: Livox CustomMsg input enabled")
+else()
+  message(STATUS "livox_ros_driver2 not found: Livox CustomMsg input disabled")
+endif()
 
 # Thirdparty libraries
 find_package(Eigen3 REQUIRED)
