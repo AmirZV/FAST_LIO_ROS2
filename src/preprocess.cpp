@@ -85,6 +85,10 @@ void Preprocess::process(const sensor_msgs::msg::PointCloud2::UniquePtr &msg, Po
       mid360_handler(msg);
       break;
 
+    case HESAI:
+      hesai_handler(msg);
+      break;
+
     default:
       default_handler(msg);
       break;
@@ -461,6 +465,96 @@ void Preprocess::velodyne_handler(const sensor_msgs::msg::PointCloud2::UniquePtr
         yaw_last[layer] = yaw_angle;
         time_last[layer] = added_pt.curvature;
       }
+
+      if (i % point_filter_num == 0)
+      {
+        if (added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z > (blind * blind))
+        {
+          pl_surf.points.push_back(added_pt);
+        }
+      }
+    }
+  }
+}
+
+void Preprocess::hesai_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg)
+{
+  pl_surf.clear();
+  pl_corn.clear();
+  pl_full.clear();
+
+  pcl::PointCloud<hesai_ros::Point> pl_orig;
+  pcl::fromROSMsg(*msg, pl_orig);
+  int plsize = pl_orig.points.size();
+  if (plsize == 0)
+    return;
+  pl_surf.reserve(plsize);
+
+  // Hesai "timestamp" is an absolute per-point time (double, seconds), so
+  // the per-point offset is always given; no yaw-based fallback is needed.
+  given_offset_time = true;
+  double time_begin = pl_orig.points[0].timestamp;
+
+  if (feature_enabled)
+  {
+    for (int i = 0; i < N_SCANS; i++)
+    {
+      pl_buff[i].clear();
+      pl_buff[i].reserve(plsize);
+    }
+
+    for (int i = 0; i < plsize; i++)
+    {
+      PointType added_pt;
+      added_pt.normal_x = 0;
+      added_pt.normal_y = 0;
+      added_pt.normal_z = 0;
+      int layer = pl_orig.points[i].ring;
+      if (layer >= N_SCANS)
+        continue;
+      added_pt.x = pl_orig.points[i].x;
+      added_pt.y = pl_orig.points[i].y;
+      added_pt.z = pl_orig.points[i].z;
+      added_pt.intensity = pl_orig.points[i].intensity;
+      added_pt.curvature = (pl_orig.points[i].timestamp - time_begin) * 1000.0;  // units: ms
+      pl_buff[layer].points.push_back(added_pt);
+    }
+
+    for (int j = 0; j < N_SCANS; j++)
+    {
+      PointCloudXYZI& pl = pl_buff[j];
+      int linesize = pl.size();
+      if (linesize < 2)
+        continue;
+      vector<orgtype>& types = typess[j];
+      types.clear();
+      types.resize(linesize);
+      linesize--;
+      for (uint i = 0; i < linesize; i++)
+      {
+        types[i].range = sqrt(pl[i].x * pl[i].x + pl[i].y * pl[i].y);
+        vx = pl[i].x - pl[i + 1].x;
+        vy = pl[i].y - pl[i + 1].y;
+        vz = pl[i].z - pl[i + 1].z;
+        types[i].dista = vx * vx + vy * vy + vz * vz;
+      }
+      types[linesize].range = sqrt(pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
+      give_feature(pl, types);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < plsize; i++)
+    {
+      PointType added_pt;
+      added_pt.normal_x = 0;
+      added_pt.normal_y = 0;
+      added_pt.normal_z = 0;
+      added_pt.x = pl_orig.points[i].x;
+      added_pt.y = pl_orig.points[i].y;
+      added_pt.z = pl_orig.points[i].z;
+      added_pt.intensity = pl_orig.points[i].intensity;
+      added_pt.curvature = (pl_orig.points[i].timestamp - time_begin) * 1000.0;  // units: ms
 
       if (i % point_filter_num == 0)
       {

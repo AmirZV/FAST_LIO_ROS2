@@ -16,8 +16,9 @@ enum LID_TYPE
   AVIA = 1,
   VELO16,
   OUST64,
-  MID360
-};  //{1, 2, 3}
+  MID360,
+  HESAI
+};  //{1, 2, 3, 4, 5}
 enum TIME_UNIT
 {
   SEC = 0,
@@ -112,6 +113,29 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint32_t, range, range)
 )
 
+// Hesai Pandar point layout as published by HesaiLidar_ROS_2.0:
+// timestamp is the absolute per-point time (double, seconds since epoch).
+namespace hesai_ros
+{
+struct EIGEN_ALIGN16 Point
+{
+  PCL_ADD_POINT4D;
+  float intensity;
+  std::uint16_t ring;
+  double timestamp;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace hesai_ros
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(hesai_ros::Point,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (float, intensity, intensity)
+    (std::uint16_t, ring, ring)
+    (double, timestamp, timestamp)
+)
+
 namespace livox_ros
 {
 typedef struct {
@@ -177,6 +201,7 @@ private:
   void oust64_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void velodyne_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void mid360_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
+  void hesai_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void default_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
   void pub_func(PointCloudXYZI &pl, const rclcpp::Time &ct);
