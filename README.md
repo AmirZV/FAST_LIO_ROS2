@@ -161,11 +161,25 @@ Edit ``` config/avia.yaml ``` to set the below parameters:
 
 Set `preprocess.lidar_type: 5`. The handler reads the `ring` (uint16) and `timestamp` (double, absolute seconds) fields that the Hesai ROS 2 driver publishes per point.
 
-`config/hesai_c3.yaml` is a working example for a Pandar40P with a Fixposition Vision-RTK 2 IMU:
+`config/hesai_c3.yaml` is a working example for a Pandar40P with a Fixposition Vision-RTK 2 IMU (C3 sensor kit).
+
+`livox_ros_driver2` is optional: without it, fast_lio builds with all point cloud inputs except Livox `CustomMsg` (`lidar_type: 1`).
+
+The Fixposition driver publishes `fixposition_driver_msgs/FpaImu`. Republish it as `sensor_msgs/Imu` on `/fixposition/imu`:
+
+```bash
+python3 scripts/c3_fixposition_imu_bridge.py
+```
+
+The bridge keeps the device timestamps, so the host clock must be synced to the Fixposition unit. It also subtracts the gyro and accelerometer biases set by the `gyro_bias` and `accel_bias` parameters.
+
+Run:
 
 ```bash
 ros2 launch fast_lio mapping.launch.py config_file:=hesai_c3.yaml
 ```
+
+For bag replay, add `--ros-args -p use_sim_time:=true` to the bridge, `use_sim_time:=true` to the launch command, and play the bag with `ros2 bag play <bag> --clock`.
 
 - `imu_topic` must carry `sensor_msgs/msg/Imu`, and the IMU and LiDAR stamps must come from the same clock.
 - `common.lid_reliable_qos: true` subscribes to the point cloud with reliable QoS. With the default best-effort QoS, large clouds can be dropped silently when the system is busy, for example on bag replay.
